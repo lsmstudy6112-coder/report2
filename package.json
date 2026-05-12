@@ -1,0 +1,14 @@
+{
+  "name": "browser-tftp-loopback",
+  "version": "1.0.0",
+  "description": "Browser drag-and-drop UI with Node.js UDP TFTP bridge on loopback address",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "tftp-server": "node udp-tftp-server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "multer": "^1.4.5-lts.1"
+  }
+}
