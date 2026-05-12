@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Browser TFTP Loopback</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; background: #f5f6fa; color: #222; }
+    main { max-width: 900px; margin: 40px auto; padding: 0 20px; }
+    .card { background: white; border-radius: 18px; padding: 24px; box-shadow: 0 10px 30px #0001; margin-bottom: 18px; }
+    #drop { border: 3px dashed #9aa4b2; border-radius: 18px; padding: 60px 20px; text-align: center; background: #fbfcff; cursor: pointer; }
+    #drop.drag { background: #eaf2ff; border-color: #477cff; }
+    input, button { font-size: 16px; padding: 12px; border-radius: 10px; border: 1px solid #ccc; }
+    button { cursor: pointer; border: 0; background: #222; color: white; }
+    pre { background: #111827; color: #d1fae5; padding: 16px; border-radius: 14px; height: 260px; overflow: auto; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>브라우저 기반 TFTP 파일 전송</h1>
+    <section class="card">
+      <h2>쓰기 WRQ / Upload</h2>
+      <div id="drop">파일을 여기로 끌어다 놓거나 클릭하세요</div>
+      <input id="file" type="file" hidden />
+      <p id="uploadResult"></p>
+    </section>
+    <section class="card">
+      <h2>읽기 RRQ / Download</h2>
+      <input id="downloadName" placeholder="다운로드할 파일명 예: test.txt" />
+      <button id="downloadBtn">브라우저로 다운로드</button>
+    </section>
+    <section class="card">
+      <h2>동작 모니터링</h2>
+      <pre id="log"></pre>
+    </section>
+  </main>
+  <script>
+    const drop = document.querySelector('#drop');
+    const fileInput = document.querySelector('#file');
+    const result = document.querySelector('#uploadResult');
+    const log = document.querySelector('#log');
+
+    function addLog(text) {
+      log.textContent += text + '\n';
+      log.scrollTop = log.scrollHeight;
+    }
+    new EventSource('/events').onmessage = e => addLog(JSON.parse(e.data));
+
+    drop.onclick = () => fileInput.click();
+    drop.ondragover = e => { e.preventDefault(); drop.classList.add('drag'); };
+    drop.ondragleave = () => drop.classList.remove('drag');
+    drop.ondrop = e => {
+      e.preventDefault(); drop.classList.remove('drag');
+      if (e.dataTransfer.files.length) uploadFile(e.dataTransfer.files[0]);
+    };
+    fileInput.onchange = () => fileInput.files[0] && uploadFile(fileInput.files[0]);
+
+    async function uploadFile(file) {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('filename', file.name);
+      result.textContent = '업로드 중...';
+      const res = await fetch('/upload', { method: 'POST', body: fd });
+      const json = await res.json();
+      result.textContent = json.message;
+    }
+
+    document.querySelector('#downloadBtn').onclick = () => {
+      const name = document.querySelector('#downloadName').value.trim();
+      if (!name) return alert('파일명을 입력하세요.');
+      window.location.href = `/download/${encodeURIComponent(name)}`;
+    };
+  </script>
+</body>
+</html>
